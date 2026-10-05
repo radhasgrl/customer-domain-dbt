@@ -30,10 +30,21 @@ jobs:
       - name: Install dbt-snowflake
         run: pip install dbt-snowflake>=1.12.1
 
-      # No stored password/key/token — same OIDC workload-identity pattern used by
+      # No stored password/key — same OIDC workload-identity pattern used by
       # infra-snowflake's Terraform/DCM pipelines. GITHUB_DEV_DBT_SVC is deliberately
       # least-privilege: it only has DEV_CUSTOMER_DBT_SERVICE_PRSN (see Repo 1's
       # oidc_service_user.tf + sources/definitions/grants.sql).
+      #
+      # Unlike the Snowflake CLI (snowflakedb/snowflake-actions@v3), dbt-snowflake's
+      # workload_identity authenticator does not fetch the GitHub OIDC token itself — it
+      # must be fetched and passed explicitly via the `token` profile field.
+      - name: Fetch Snowflake OIDC token
+        run: |
+          TOKEN=$(curl -sSL -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=snowflakecomputing.com" | jq -r '.value')
+          echo "::add-mask::$TOKEN"
+          echo "SNOWFLAKE_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
       - name: Configure dbt profile (OIDC workload identity)
         run: |
           mkdir -p ~/.dbt
@@ -48,6 +59,7 @@ jobs:
                 role: DEV_CUSTOMER_DBT_SERVICE_PRSN
                 authenticator: workload_identity
                 workload_identity_provider: OIDC
+                token: "$SNOWFLAKE_TOKEN"
                 warehouse: DEV_TRANSFORM_WH
                 database: DEV_CUSTOMER_DB
                 schema: STAGING
