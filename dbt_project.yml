@@ -1,0 +1,23 @@
+name: 'customer_domain'
+version: '1.0.0'
+config-version: 2
+
+profile: 'customer_domain'
+
+model-paths: ["models"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  customer_domain:
+    staging:
+      +materialized: view
+      +schema: STAGING
+    marts:
+      +materialized: table
+      +schema: MARTS

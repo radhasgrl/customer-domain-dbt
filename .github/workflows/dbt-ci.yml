@@ -1,0 +1,61 @@
+name: dbt Build
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  dbt-build:
+    name: dbt Build
+    runs-on: ubuntu-latest
+    environment:
+      name: DEV-dbt
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dbt-snowflake
+        run: pip install dbt-snowflake>=1.12.1
+
+      # No stored password/key/token — same OIDC workload-identity pattern used by
+      # infra-snowflake's Terraform/DCM pipelines. GITHUB_DEV_DBT_SVC is deliberately
+      # least-privilege: it only has DEV_CUSTOMER_DBT_SERVICE_PRSN (see Repo 1's
+      # oidc_service_user.tf + sources/definitions/grants.sql).
+      - name: Configure dbt profile (OIDC workload identity)
+        run: |
+          mkdir -p ~/.dbt
+          cat > ~/.dbt/profiles.yml <<EOF
+          customer_domain:
+            target: dev
+            outputs:
+              dev:
+                type: snowflake
+                account: xygpmhm-gq04150
+                user: GITHUB_DEV_DBT_SVC
+                role: DEV_CUSTOMER_DBT_SERVICE_PRSN
+                authenticator: workload_identity
+                workload_identity_provider: OIDC
+                warehouse: DEV_TRANSFORM_WH
+                database: DEV_CUSTOMER_DB
+                schema: STAGING
+                threads: 2
+          EOF
+
+      - name: dbt debug
+        run: dbt debug
+
+      - name: dbt build
+        run: dbt build

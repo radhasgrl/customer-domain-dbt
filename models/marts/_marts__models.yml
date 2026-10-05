@@ -1,0 +1,16 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: >
+      Curated, consumption-ready Customer dimension. Reader-facing — granted to
+      DEV_CUSTOMER_READER_FNCRL (Repo 1, via DEV_CUSTOMER_DB.MARTS_SCRL_R) for analysts and
+      consumers.
+    columns:
+      - name: customer_id
+        description: Unique customer identifier.
+        tests:
+          - unique
+          - not_null
+      - name: customer_name
+        description: Customer display name.

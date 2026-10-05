@@ -1,0 +1,22 @@
+version: 2
+
+sources:
+  - name: customer_raw
+    database: DEV_CUSTOMER_DB
+    schema: RAW
+    description: >
+      Raw landing zone for the Customer domain. Loaded by Repo 2 (data-ingestion-raw) via
+      Snowpipe. The database/schema/table are DCM-managed by Repo 1 (infra-snowflake),
+      not this repo — see sources/definitions/tables.sql there.
+    tables:
+      - name: customers
+        identifier: CUSTOMERS
+        description: Raw customer records as landed by Snowpipe.
+        columns:
+          - name: customer_id
+            description: Unique customer identifier.
+            tests:
+              - unique
+              - not_null
+          - name: customer_name
+            description: Customer display name.

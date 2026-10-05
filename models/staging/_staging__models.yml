@@ -1,0 +1,13 @@
+version: 2
+
+models:
+  - name: stg_customers
+    description: Lightly cleaned, renamed view over the raw CUSTOMERS landing table.
+    columns:
+      - name: customer_id
+        description: Unique customer identifier.
+        tests:
+          - unique
+          - not_null
+      - name: customer_name
+        description: Customer display name.
