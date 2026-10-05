@@ -1,8 +1,15 @@
 name: dbt Build
 
+# PR runs build into isolated, PR-scoped schemas (STAGING_PR_<n> / MARTS_PR_<n>) instead of
+# the real shared STAGING/MARTS schemas — see the comment in
+# macros/generate_schema_name.sql for why. Only the push-to-main build targets the real
+# schemas. The "Clean up PR schemas" job (triggered on PR close) drops the ephemeral
+# schemas so they don't accumulate.
+
 on:
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, closed]
   push:
     branches: [main]
   workflow_dispatch:
@@ -10,10 +17,14 @@ on:
 permissions:
   contents: read
   id-token: write
+  pull-requests: write
 
 jobs:
   dbt-build:
     name: dbt Build
+    # Skip on the PR-closed event (that event only exists to trigger cleanup-pr-schemas
+    # below) — a closed/merged PR shouldn't trigger a fresh isolated-schema build.
+    if: github.event_name != 'pull_request' || github.event.action != 'closed'
     runs-on: ubuntu-latest
     environment:
       name: DEV-dbt
@@ -45,6 +56,17 @@ jobs:
           echo "::add-mask::$TOKEN"
           echo "SNOWFLAKE_TOKEN=$TOKEN" >> "$GITHUB_ENV"
 
+      # Empty on push-to-main (targets the real STAGING/MARTS schemas). Set to
+      # "_PR_<number>" on pull_request, consumed by macros/generate_schema_name.sql to
+      # isolate PR builds into their own schemas.
+      - name: Compute PR schema suffix
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "DBT_SCHEMA_SUFFIX=_PR_${{ github.event.pull_request.number }}" >> "$GITHUB_ENV"
+          else
+            echo "DBT_SCHEMA_SUFFIX=" >> "$GITHUB_ENV"
+          fi
+
       - name: Configure dbt profile (OIDC workload identity)
         run: |
           mkdir -p ~/.dbt
@@ -70,4 +92,59 @@ jobs:
         run: dbt debug
 
       - name: dbt build
-        run: dbt build
+        id: dbt_build
+        run: dbt build 2>&1 | tee dbt_build_output.txt
+        continue-on-error: true
+
+      - name: Post build summary as PR comment
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('dbt_build_output.txt', 'utf8');
+            const truncated = output.length > 60000 ? output.slice(0, 60000) + '\n\n...output truncated' : output;
+            const schemaNote = `Built into isolated preview schemas: \`STAGING_PR_${context.issue.number}\` / \`MARTS_PR_${context.issue.number}\` (not the real STAGING/MARTS schemas).`;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## dbt Build (preview)\n${schemaNote}\n\`\`\`\n${truncated}\n\`\`\``
+            });
+
+      - name: Fail if dbt build failed
+        if: steps.dbt_build.outcome == 'failure'
+        run: exit 1
+
+  cleanup-pr-schemas:
+    name: Clean up PR schemas
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    environment:
+      name: DEV-dbt
+
+    steps:
+      - name: Setup Snowflake CLI (OIDC)
+        uses: snowflakedb/snowflake-actions@v3
+        with:
+          use-oidc: true
+
+      - name: Create default Snowflake CLI connection (OIDC)
+        run: |
+          snow connection add \
+            --connection-name github \
+            --account xygpmhm-gq04150 \
+            --user GITHUB_DEV_DBT_SVC \
+            --role DEV_CUSTOMER_DBT_SERVICE_PRSN \
+            --warehouse DEV_TRANSFORM_WH \
+            --authenticator WORKLOAD_IDENTITY \
+            --workload-identity-provider OIDC \
+            --default \
+            --no-interactive
+
+      # Safe even if the PR's build never ran (e.g. PR closed without triggering CI) or
+      # already ran cleanup — IF EXISTS makes this a no-op in that case.
+      - name: Drop ephemeral PR schemas
+        run: |
+          snow sql -q "DROP SCHEMA IF EXISTS DEV_CUSTOMER_DB.STAGING_PR_${{ github.event.pull_request.number }};"
+          snow sql -q "DROP SCHEMA IF EXISTS DEV_CUSTOMER_DB.MARTS_PR_${{ github.event.pull_request.number }};"
