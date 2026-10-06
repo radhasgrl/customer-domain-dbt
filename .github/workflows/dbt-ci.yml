@@ -82,7 +82,7 @@ jobs:
                 authenticator: workload_identity
                 workload_identity_provider: OIDC
                 token: "$SNOWFLAKE_TOKEN"
-                warehouse: DEV_TRANSFORM_WH
+                warehouse: DEV_CUSTOMER_TRANSFORM_WH
                 database: DEV_CUSTOMER_DB
                 schema: STAGING
                 threads: 2
@@ -136,7 +136,7 @@ jobs:
             --account xygpmhm-gq04150 \
             --user GITHUB_DEV_DBT_SVC \
             --role DEV_CUSTOMER_DBT_SERVICE_PRSN \
-            --warehouse DEV_TRANSFORM_WH \
+            --warehouse DEV_CUSTOMER_TRANSFORM_WH \
             --authenticator WORKLOAD_IDENTITY \
             --workload-identity-provider OIDC \
             --default \

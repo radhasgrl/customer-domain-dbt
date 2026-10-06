@@ -40,8 +40,8 @@ customer-domain-dbt/
 | Item | Value | Owned by |
 |---|---|---|
 | Snowflake user | `GITHUB_DEV_DBT_SVC` | Terraform (Repo 1, `oidc_service_user.tf`) |
-| Role | `DEV_CUSTOMER_DBT_SERVICE_PRSN` (Tier 1 persona) | DCM (Repo 1, `sources/definitions/roles.sql` + `grants.sql`) |
-| Effective access | Read `DEV_CUSTOMER_DB.RAW`, read/write `DEV_CUSTOMER_DB.STAGING`, read `DEV_CUSTOMER_DB.SHARED`, `USAGE` on `DEV_TRANSFORM_WH` | Via `DEV_CUSTOMER_TRANSFORM_FNCRL` (Tier 2) |
+| Role | `DEV_CUSTOMER_DBT_SERVICE_PRSN` (Tier 1 persona) | DCM (Repo 1, `dcm/_template/sources/definitions/roles.sql` + `grants.sql`) |
+| Effective access | Read `DEV_CUSTOMER_DB.RAW`, read/write `DEV_CUSTOMER_DB.STAGING`, read `DEV_CUSTOMER_DB.SHARED`, `USAGE` on `DEV_CUSTOMER_TRANSFORM_WH` | Via `DEV_CUSTOMER_TRANSFORM_FNCRL` (Tier 2) |
 | Auth method | GitHub OIDC workload identity (`authenticator: workload_identity`) — no stored password, key, or token | — |
 | GitHub Environment | `DEV-dbt` | This repo |
 
@@ -58,7 +58,7 @@ identity's own role — dbt only needs to *write* MARTS, not read it back as a s
 dbt-snowflake's `workload_identity` authenticator is CI-only (it expects a GitHub Actions —
 or other supported platform's — OIDC token at runtime). For local runs, use your own
 `externalbrowser`-authenticated `~/.dbt/profiles.yml` target against the same
-`DEV_CUSTOMER_DB` / `DEV_TRANSFORM_WH`, under your own role (e.g. `SYSADMIN` or a role
+`DEV_CUSTOMER_DB` / `DEV_CUSTOMER_TRANSFORM_WH`, under your own role (e.g. `SYSADMIN` or a role
 granted `DEV_CUSTOMER_TRANSFORM_FNCRL`), for example:
 
 ```yaml
@@ -71,7 +71,7 @@ customer_domain:
       user: <your Snowflake username>
       authenticator: externalbrowser
       role: SYSADMIN
-      warehouse: DEV_TRANSFORM_WH
+      warehouse: DEV_CUSTOMER_TRANSFORM_WH
       database: DEV_CUSTOMER_DB
       schema: STAGING
       threads: 2
