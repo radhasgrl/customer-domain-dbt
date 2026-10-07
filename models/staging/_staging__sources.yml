@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: customer_raw
-    database: DEV_CUSTOMER_DB
+    database: "{{ target.database }}"
     schema: RAW
     description: >
       Raw landing zone for the Customer domain. Loaded by Repo 2 (data-ingestion-raw) via

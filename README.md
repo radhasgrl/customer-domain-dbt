@@ -52,7 +52,7 @@ maintained CI for Repo 3," for the full rationale.
 | Item | Value | Owned by |
 |---|---|---|
 | Snowflake user | `GITHUB_DEV_DBT_SVC` | Terraform (Repo 1, `oidc_service_user.tf`) |
-| Role | `DEV_CUSTOMER_DBT_SERVICE_PRSN` (Tier 1 persona) | DCM (Repo 1, `dcm/_template/sources/definitions/roles.sql` + `grants.sql`) |
+| Role | `DEV_CUSTOMER_DBT_SERVICE_PRSN` (Tier 1 persona) | DCM (Repo 1, `dcm/sources/definitions/roles.sql` + `grants.sql`) |
 | Effective access | Read `DEV_CUSTOMER_DB.RAW`, read/write `DEV_CUSTOMER_DB.STAGING`, read `DEV_CUSTOMER_DB.SHARED`, `USAGE` on `DEV_CUSTOMER_TRANSFORM_WH` | Via `DEV_CUSTOMER_TRANSFORM_FNCRL` (Tier 2) |
 | Auth method | GitHub OIDC workload identity (`authenticator: workload_identity`) — no stored password, key, or token | — |
 | GitHub Environment | `DEV-dbt` | This repo |
