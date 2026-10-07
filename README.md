@@ -65,6 +65,28 @@ Note: `dim_customers` (MARTS) is readable by `DEV_CUSTOMER_READER_FNCRL`
 (`DEV_CUSTOMER_DATA_ANALYST_PRSN` / `DEV_CUSTOMER_DATA_CONSUMER_PRSN`), not by the dbt
 identity's own role — dbt only needs to *write* MARTS, not read it back as a separate role.
 
+## Environments & Versioning
+
+| Environment | How it's reached | Snowflake objects | GitHub Environment | Approval gate |
+|---|---|---|---|---|
+| DEV | Automatic — every merge to `main` | `DEV_CUSTOMER_DB`, `DEV_CUSTOMER_TRANSFORM_WH`, `DEV_CUSTOMER_DBT_SERVICE_PRSN` | `DEV-dbt` | None (continuous) |
+| TEST | Manual — `promote.yml` dispatched against a specific release tag | `TEST_CUSTOMER_DB`, `TEST_CUSTOMER_TRANSFORM_WH`, `TEST_CUSTOMER_DBT_SERVICE_PRSN` | `TEST-dbt` | Required reviewer, non-bypassable even by an admin |
+| PROD | Not built yet | — | — | — |
+
+Same pattern as Repo 1 (`snowflake-platform-tf`) — see that repo's README for the full
+mechanics (Conventional Commits PR titles, `release-please`, tagged promotion). **One
+structural difference here**: this repo's actual dbt build logic lives in Repo 1's
+`dbt-build-reusable.yml` (`workflow_call`), and a job that calls a reusable workflow can't
+also run its own `checkout` step — so `promote.yml` has no `version` input at all.
+Promoting a specific tagged release means dispatching `promote.yml` **against that tag as
+the git ref**, not as a workflow input:
+```powershell
+gh workflow run promote.yml --ref v1.1.0 -f target_environment=TEST
+```
+(or, in the Actions UI, pick the tag from the branch/tag dropdown before clicking
+"Run workflow") — dispatching with the default ref (`main`) would build whatever is
+currently on `main`, not a pinned historical version.
+
 ## Running locally
 
 dbt-snowflake's `workload_identity` authenticator is CI-only (it expects a GitHub Actions —
