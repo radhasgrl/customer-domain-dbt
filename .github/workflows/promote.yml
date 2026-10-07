@@ -1,0 +1,48 @@
+name: Promote to Environment
+
+# Deliberately workflow_dispatch-only -- promotion is always a manual, deliberate action,
+# never automatic.
+#
+# UNLIKE snowflake-platform-tf's and data-ingestion-raw's promote.yml, this workflow has NO
+# `version` input. That's not an oversight -- this repo's actual build logic lives in Repo
+# 1's reusable workflow (dbt-build-reusable.yml), and a job that calls a reusable workflow
+# via `uses:` cannot also have its own steps (so it can't do its own `actions/checkout` with
+# a chosen ref). The reusable workflow's internal checkout step has no explicit ref, so it
+# resolves to whatever ref triggered THIS (the calling) workflow run.
+#
+# Practical consequence: to promote a specific tagged release, dispatch THIS WORKFLOW
+# AGAINST THAT TAG as the git ref -- e.g.:
+#   gh workflow run promote.yml --ref v1.1.0 -f target_environment=TEST
+# or, in the Actions UI, pick the tag from the branch/tag dropdown before clicking
+# "Run workflow". Dispatching with the default ref (main) would build whatever is
+# currently on main, not a pinned historical version.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: "Environment to promote to (dispatch this workflow against the git tag you want to promote -- see this file's header comment)"
+        required: true
+        type: choice
+        options:
+          - TEST
+        # PROD intentionally not listed yet -- no PROD identity, DCM target, or GitHub
+        # Environment exist today.
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  dbt:
+    uses: radhasgrl/snowflake-platform-tf/.github/workflows/dbt-build-reusable.yml@main
+    with:
+      domain: customer
+      dbt_project_name: customer_domain
+      account: xygpmhm-gq04150
+      user: GITHUB_${{ inputs.target_environment }}_CUSTOMER_DBT_SVC
+      role: ${{ inputs.target_environment }}_CUSTOMER_DBT_SERVICE_PRSN
+      warehouse: ${{ inputs.target_environment }}_CUSTOMER_TRANSFORM_WH
+      database: ${{ inputs.target_environment }}_CUSTOMER_DB
+      schema: STAGING
+      github_environment: ${{ inputs.target_environment }}-dbt
