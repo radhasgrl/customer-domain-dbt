@@ -32,8 +32,20 @@ customer-domain-dbt/
 │   └── marts/
 │       ├── _marts__models.yml
 │       └── dim_customers.sql
-└── .github/workflows/dbt-ci.yml   # dbt build on PR + push to main
+└── .github/workflows/dbt-ci.yml   # thin wrapper — calls Repo 1's centrally-maintained
+                                   #   dbt-build-reusable.yml, on PR + push to main
 ```
+
+### Centrally-maintained CI
+
+This repo's `.github/workflows/dbt-ci.yml` contains almost no logic of its own — it's a
+thin wrapper that calls `dbt-build-reusable.yml` in Repo 1 (`snowflake-platform-tf`) via
+`uses:`, passing only this domain's own values (database, warehouse, role, schema, etc.).
+The actual build steps (checkout, dbt-snowflake install, OIDC token fetch, `profiles.yml`
+generation, `dbt build`, PR comment, PR-schema cleanup) are maintained centrally in Repo 1
+— fixing a bug or adding a step there propagates to this repo (and any future per-domain
+dbt repo) automatically, with no PR needed here. See Repo 1's README.md, "Centrally-
+maintained CI for Repo 3," for the full rationale.
 
 ## Identity and access (provisioned by Repo 1 — nothing to set up here)
 
