@@ -21,3 +21,10 @@ models:
     marts:
       +materialized: table
       +schema: MARTS
+
+# Ensures the RAW landing table exists (CREATE TABLE IF NOT EXISTS, see
+# macros/create_raw_tables.sql) before any model that sources from it runs. Table DDL for
+# RAW now lives here, in dbt (Repo 3) -- not in DCM (Repo 1), which continues to own only
+# the RAW schema container and its grants.
+on-run-start:
+  - "{{ create_raw_customers_table() }}"
