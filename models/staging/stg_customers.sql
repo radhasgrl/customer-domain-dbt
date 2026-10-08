@@ -6,5 +6,6 @@ with source as (
 
 select
     customer_id,
-    customer_name
+    customer_name,
+    signup_channel
 from source

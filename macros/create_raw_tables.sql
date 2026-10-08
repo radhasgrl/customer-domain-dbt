@@ -15,7 +15,8 @@
   {% set sql %}
     CREATE TABLE IF NOT EXISTS {{ target.database }}.RAW.CUSTOMERS (
       CUSTOMER_ID   NUMBER  COMMENT 'Unique customer identifier',
-      CUSTOMER_NAME VARCHAR COMMENT 'Customer display name'
+      CUSTOMER_NAME VARCHAR COMMENT 'Customer display name',
+      SIGNUP_CHANNEL  VARCHAR COMMENT 'Acquisition channel the customer signed up through'
     )
     COMMENT = 'Raw landing table for customer records, loaded by the Snowpipe ingestion pipeline (Repo 2) -- created and owned by dbt (Repo 3), not DCM (Repo 1)';
   {% endset %}
