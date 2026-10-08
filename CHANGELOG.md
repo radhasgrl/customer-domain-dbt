@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.2](https://github.com/radhasgrl/customer-domain-dbt/compare/v1.0.1...v1.0.2) (2026-10-08)
+
+
+### Bug Fixes
+
+* **customer:** create RAW.CUSTOMERS table from dbt, not DCM ([#10](https://github.com/radhasgrl/customer-domain-dbt/issues/10)) ([2333acf](https://github.com/radhasgrl/customer-domain-dbt/commit/2333acf7cfadfaeec8fb93f1d016c3e31b77d027))
+
 ## [1.0.1](https://github.com/radhasgrl/customer-domain-dbt/compare/v1.0.0...v1.0.1) (2026-10-07)
 
 
