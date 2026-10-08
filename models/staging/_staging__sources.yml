@@ -6,8 +6,9 @@ sources:
     schema: RAW
     description: >
       Raw landing zone for the Customer domain. Loaded by Repo 2 (data-ingestion-raw) via
-      Snowpipe. The database/schema/table are DCM-managed by Repo 1 (infra-snowflake),
-      not this repo — see sources/definitions/tables.sql there.
+      Snowpipe. Table DDL is created and owned by this repo (see
+      macros/create_raw_tables.sql, invoked via on-run-start) -- Repo 1 (infra-snowflake)
+      governs only the RAW schema container and its grants, not the table structure.
     tables:
       - name: customers
         identifier: CUSTOMERS
