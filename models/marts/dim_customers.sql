@@ -6,5 +6,6 @@ with customers as (
 
 select
     customer_id,
-    customer_name
+    customer_name,
+    signup_channel
 from customers
